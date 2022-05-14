@@ -1,4 +1,6 @@
 import express from 'express';
+import axios from 'axios';
+import cron from 'node-cron';
 import cors from 'cors';
 import Sequelize from 'sequelize';
 
@@ -48,12 +50,14 @@ sequelize.sync({force: false, alter: true})
 //ルーティング
 function setupRoute() {
     console.log("db connection succeeded");
+    //全てのTodoItemを返す
     app.get('/getall', (req, res) => {
       Todo.findAll({})
       .then(result =>{
         res.send(result);
       })
     });
+    //新たなTodoItemを登録する
     app.post('/setitem', (req, res) => {
       let item = new Todo({
         text: req.body.text,
@@ -64,7 +68,25 @@ function setupRoute() {
       .then((mes) =>{
         res.send(mes.dataValues);
       });
+      //通知を設定する
+      let min = parseInt(req.body.date.slice(14, 16));
+      let hours = parseInt(req.body.date.slice(11, 13));
+      let date = parseInt(req.body.date.slice(8, 10));
+      let month = parseInt(req.body.date.slice(5, 7));
+      //指定時間にdiscordWebhookにメッセージ送信
+      cron.schedule(`${min} ${hours} ${date} ${month} *` ,() => {
+        axios.post(
+          'https://discord.com/api/webhooks/974498187169660978/jWcxpcuDE0k-JEiVp0VJ5K30I3fcqzYGdHzvJ0tMCKoep4SPBHa9GLitXigm5liHiVAj',
+          {
+            "content": `${req.body.text}　${req.body.date}`
+          });
+      },{
+        scheduled: true,
+        timezone: "Asia/Tokyo"
+      });
+      
     })
+    //TodoItemを更新する
     app.post('/updateitem', (req, res) => {
       Todo.update(
         {done: req.body.done},

@@ -6,7 +6,7 @@ services:
     volumes:
       - ./app:/app
     working_dir: /app
-    command: sh -c "npm start"
+    command: sh -c "npm install && npm start"
     ports:
       - 3333:3000
     tty: true
@@ -23,10 +23,12 @@ services:
     volumes:
       - ./api:/api
     working_dir: /api
-    command: sh -c "npm start"
+    command: sh -c "npm install && npm start"
     ports:
       - 8080:8080
     tty: true
+    environment:
+      TZ: Asia/Tokyo
     depends_on:
       - db
     networks:
