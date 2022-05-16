@@ -56,9 +56,6 @@ function Todo(){
   };
   return (
     <div className="panel">
-      <div className="panel-heading">
-        ⚛️ React ToDo
-      </div>
       {/* 入力フィールドの表示 */}
       <Input onAdd={handleAdd} />
       {/* フィルタリングをするボタン */}
@@ -71,6 +68,65 @@ function Todo(){
         {displayItems.length} items
       </div>
     </div>
+  );
+}
+
+function Settings(){
+  //WebhookURL
+  const [currentUrl, setCurrentUrl] = React.useState('');
+  const [url, setUrl] = React.useState('');
+  const handleCurrentUrlChange = e => setCurrentUrl(e.target.value);
+  const handleAdd = e => {
+    //データベースへ反映
+    axios.post(`${baseURL}setwebhook`, {url: currentUrl});
+    setUrl(currentUrl);
+    setCurrentUrl('');
+  }
+  //データベースからWebhookURLを取得してくる
+  useEffect(() => {
+    const fetchdata = async() => {
+      const result = await axios.get(`${baseURL}getwebhook`);
+      setUrl(result.data.url);
+    };
+    fetchdata();
+  }, []);
+  return(
+    <div>
+      <div className="panel-block">
+        <input className="input" type="text" placeholder="DiscordWebhookを入力" value={currentUrl} onChange={handleCurrentUrlChange} />
+        <input className='button is-success' type="button" value="Add" onClick={handleAdd} />
+      </div>
+      <h1>現在設定されているURL: {url}</h1>
+    </div>
+    
+  );
+}
+
+function Navbar({onChange}) {
+  const handleClick = (key, e) => {
+    e.preventDefault();
+    onChange(key);
+  };
+  return (
+    <nav className="navbar is-light" role="navigation" aria-label="main navigation">
+      <div id="navbarBasicExample" className="navbar-menu">
+        <div className="navbar-start">
+          <a className="navbar-item" href='/#' onClick={handleClick.bind(null, 'Home')}>Home</a>
+          <a className="navbar-item" href='/#' onClick={handleClick.bind(null, 'Settings')}>Settings</a>
+        </div>
+
+        <div className="navbar-end">
+          <div className="navbar-item">
+            <div className="buttons">
+              <a className="button is-primary" href='/#'>
+                <strong>Sign up</strong>
+              </a>
+              <a className="button is-light" href='/#'>Log in</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
   );
 }
 
@@ -169,9 +225,25 @@ function Filter({ value, onChange }) {
 }
 
 function App() {
-  return (
+  const [state, setState] = React.useState('Home');
+  const handleStateChange = value => {
+    setState(value)
+  };
+
+  const contents = (value) => {
+    switch(value){
+      case 'Home':
+        return <Todo />
+      case 'Settings':
+        return <Settings />
+      default:
+        break;
+    }
+  }
+  return(
     <div className="App">
-      <Todo />
+      <Navbar onChange={handleStateChange}/>
+      {contents(state)}
     </div>
   );
 }

@@ -39,6 +39,13 @@ const Todo = sequelize.define('todoItem', {
 },{
     timestamps: false
 });
+//Webhooksテーブルの作成
+const Webhooks = sequelize.define('webhook', {
+  key: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
+  url: { type: Sequelize.TEXT }
+},{
+  timestamps: false
+});
 //postgresqlへの反映
 sequelize.sync({force: false, alter: true})
 .then(setupRoute)
@@ -55,7 +62,7 @@ function setupRoute() {
       Todo.findAll({})
       .then(result =>{
         res.send(result);
-      })
+      });
     });
     //新たなTodoItemを登録する
     app.post('/setitem', (req, res) => {
@@ -73,12 +80,18 @@ function setupRoute() {
       let hours = parseInt(req.body.date.slice(11, 13));
       let date = parseInt(req.body.date.slice(8, 10));
       let month = parseInt(req.body.date.slice(5, 7));
+      //WebhookURL取得
+      let url = null;
+      Webhooks.findOne({})
+      .then(h => {
+        url = h.url;
+      });
       //指定時間にdiscordWebhookにメッセージ送信
       cron.schedule(`${min} ${hours} ${date} ${month} *` ,() => {
         axios.post(
-          'https://discord.com/api/webhooks/974498187169660978/jWcxpcuDE0k-JEiVp0VJ5K30I3fcqzYGdHzvJ0tMCKoep4SPBHa9GLitXigm5liHiVAj',
+          url,
           {
-            "content": `${req.body.text}　${req.body.date}`
+            "content": `${req.body.text}  ${req.body.date}`
           });
       },{
         scheduled: true,
@@ -92,6 +105,26 @@ function setupRoute() {
         {done: req.body.done},
         {where: {key: req.body.key}}
       );
+    })
+    //WebhookURLを設定する
+    app.post('/setwebhook', (req, res) => {
+      //既に設定が存在するか確認、存在する場合削除
+      Webhooks.findOne({})
+      .then(hook => {
+        hook.destroy();
+      });
+      //新たにWenhookURLを設定
+      let hook = new Webhooks({url: req.body.url});
+      hook.save()
+      .then((mes) =>{
+        res.send(mes.dataValues);
+      });
+    })
+    app.get('/getwebhook', (req, res) => {
+      Webhooks.findOne({})
+      .then(result => {
+        res.send(result);
+      });
     })
 }
 
